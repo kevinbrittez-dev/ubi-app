@@ -8,7 +8,7 @@ import 'package:workmanager/workmanager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:io';
-import 'package:flutter/services.dart';
+import 'dart:async';
 
 final FlutterLocalNotificationsPlugin notifPlugin =
     FlutterLocalNotificationsPlugin();
@@ -227,17 +227,100 @@ class _MapScreenState extends State<MapScreen> {
   bool _compartiendo = false;
   late DatabaseReference _ref;
 
+  // === NUEVO: Variables para envío automático en foreground ===
+  Timer? _autoTimer;
+  bool _autoEnabled = false;
+  List<String> _diasGuardados = [];
+  int _inicioHora = 22;
+  int _inicioMin = 0;
+  int _finHora = 22;
+  int _finMin = 30;
+
   @override
   void initState() {
     super.initState();
     _ref = FirebaseDatabase.instance.ref('rooms/${widget.clave}');
+
     if (widget.rol == 'ver') {
       _escuchar();
     } else {
       _obtenerMiUbicacion();
+      _cargarConfigAuto().then((_) {
+        _iniciarTimerAutomatico();
+      });
     }
   }
 
+  @override
+  void dispose() {
+    _autoTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _cargarConfigAuto() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _autoEnabled = prefs.getBool('auto_enabled') ?? false;
+      _diasGuardados = prefs.getStringList('dias') ?? [];
+      _inicioHora = prefs.getInt('inicio_hora') ?? 22;
+      _inicioMin = prefs.getInt('inicio_min') ?? 0;
+      _finHora = prefs.getInt('fin_hora') ?? 22;
+      _finMin = prefs.getInt('fin_min') ?? 30;
+    });
+  }
+
+  void _iniciarTimerAutomatico() {
+    if (!_autoEnabled) return;
+
+    _autoTimer?.cancel();
+    _autoTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+      if (!mounted) return;
+
+      final now = DateTime.now();
+      final diaActual = now.weekday.toString();
+
+      if (!_diasGuardados.contains(diaActual)) {
+        if (_compartiendo) _toggleCompartir();
+        return;
+      }
+
+      final nowMin = now.hour * 60 + now.minute;
+      final startMin = _inicioHora * 60 + _inicioMin;
+      final endMin = _finHora * 60 + _finMin;
+
+      final dentroDelHorario = nowMin >= startMin && nowMin < endMin;
+
+      if (dentroDelHorario && !_compartiendo) {
+        await _activarCompartirAutomatico();
+      } else if (!dentroDelHorario && _compartiendo) {
+        _toggleCompartir();
+      }
+    });
+  }
+
+  Future<void> _activarCompartirAutomatico() async {
+    bool ok = await Geolocator.isLocationServiceEnabled();
+    if (!ok) {
+      _snack('Activa el GPS');
+      return;
+    }
+
+    LocationPermission perm = await Geolocator.checkPermission();
+    if (perm == LocationPermission.denied) {
+      perm = await Geolocator.requestPermission();
+    }
+    if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
+      _snack('Permiso de ubicación denegado');
+      return;
+    }
+
+    setState(() => _compartiendo = true);
+    _toggleCompartir(); // reutiliza tu método original
+    debugPrint('🚀 Envío EN VIVO activado AUTOMÁTICAMENTE por horario');
+    _snack('Compartiendo automáticamente según horario');
+  }
+
+  // ====================== MÉTODOS ORIGINALES (sin cambios) ======================
   void _escuchar() {
     _ref.onValue.listen((event) {
       final snapshot = event.snapshot;
@@ -283,7 +366,7 @@ class _MapScreenState extends State<MapScreen> {
     }
     if (perm == LocationPermission.denied ||
         perm == LocationPermission.deniedForever) {
-      _snack('Permiso de ubicacion denegado');
+      _snack('Permiso de ubicación denegado');
       return;
     }
     setState(() => _compartiendo = true);
