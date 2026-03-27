@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "96664850127",
+    "firebase_url": "https://ubicacion-app-21ff2-default-rtdb.firebaseio.com",
+    "project_id": "ubicacion-app-21ff2",
+    "storage_bucket": "ubicacion-app-21ff2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:96664850127:android:0b324e7c26f574cde371ba",
+        "android_client_info": {
+          "package_name": "com.ubicacion.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwjNCVAeLvMq_P0eyS36IUORZSOZD_KW0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
