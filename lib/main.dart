@@ -308,49 +308,49 @@ class _MapScreenState extends State<MapScreen> {
       }
 
       if (dentroDelHorario && !_compartiendo) {
-        debugPrint('✅ HORARIO COINCIDE → Activando automático...');
-        await _activarCompartirAutomatico();
-      } else if (!dentroDelHorario && _compartiendo) {
-        debugPrint('⏹️ Horario terminó → Deteniendo');
-        _toggleCompartir();
-      }
+  debugPrint('✅ HORARIO COINCIDE → Activando automático...');
+  await _activarCompartirAutomatico();
+} else if (!dentroDelHorario && _compartiendo) {
+  debugPrint('⏹️ Horario terminó → Deteniendo');
+  setState(() => _compartiendo = false);
+}
     });
   }
 
         Future<void> _activarCompartirAutomatico() async {
-    bool ok = await Geolocator.isLocationServiceEnabled();
-    if (!ok) {
-      _snack('Activa el GPS');
-      return;
-    }
-
-    LocationPermission perm = await Geolocator.checkPermission();
-    if (perm == LocationPermission.denied) {
-      perm = await Geolocator.requestPermission();
-    }
-    if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
-      _snack('Permiso de ubicación denegado');
-      return;
-    }
-
-    setState(() => _compartiendo = true);
-
-    // Stream en vivo (igual que el botón manual)
-    Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 5,
-      ),
-    ).listen((pos) {
-      if (!_compartiendo || !mounted) return;
-      _ref.set({'lat': pos.latitude, 'lng': pos.longitude});
-      setState(() => _miUbicacion = LatLng(pos.latitude, pos.longitude));
-      _mapCtrl.move(_miUbicacion!, 16);
-    });
-
-        print('🚀 Envío EN VIVO activado AUTOMÁTICAMENTE por horario');
-    _snack('Compartiendo automáticamente según horario');
+  bool ok = await Geolocator.isLocationServiceEnabled();
+  if (!ok) {
+    _snack('Activa el GPS');
+    return;
   }
+
+  LocationPermission perm = await Geolocator.checkPermission();
+  if (perm == LocationPermission.denied) {
+    perm = await Geolocator.requestPermission();
+  }
+  if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
+    _snack('Permiso de ubicación denegado');
+    return;
+  }
+
+  setState(() => _compartiendo = true);
+
+  // Stream en vivo (igual que el botón manual)
+  Geolocator.getPositionStream(
+    locationSettings: const LocationSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 5,
+    ),
+  ).listen((pos) {
+    if (!_compartiendo || !mounted) return;
+    _ref.set({'lat': pos.latitude, 'lng': pos.longitude});
+    setState(() => _miUbicacion = LatLng(pos.latitude, pos.longitude));
+    _mapCtrl.move(_miUbicacion!, 16);
+  });
+
+  debugPrint('🚀 Envío EN VIVO activado AUTOMÁTICAMENTE por horario');
+  _snack('Compartiendo automáticamente según horario');
+}
 
   // ====================== MÉTODOS ORIGINALES (sin cambios) ======================
   void _escuchar() {
