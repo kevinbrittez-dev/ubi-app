@@ -258,7 +258,7 @@ class _MapScreenState extends State<MapScreen> {
     super.dispose();
   }
 
-  Future<void> _cargarConfigAuto() async {
+    Future<void> _cargarConfigAuto() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _autoEnabled = prefs.getBool('auto_enabled') ?? false;
@@ -268,10 +268,20 @@ class _MapScreenState extends State<MapScreen> {
       _finHora = prefs.getInt('fin_hora') ?? 22;
       _finMin = prefs.getInt('fin_min') ?? 30;
     });
+
+    debugPrint('📋 CONFIG CARGADA:');
+    debugPrint('   auto_enabled = $_autoEnabled');
+    debugPrint('   dias = $_diasGuardados');
+    debugPrint('   horario = ${_inicioHora}:${_inicioMin.toString().padLeft(2,'0')} → ${_finHora}:${_finMin.toString().padLeft(2,'0')}');
   }
 
-  void _iniciarTimerAutomatico() {
-    if (!_autoEnabled) return;
+    void _iniciarTimerAutomatico() {
+    if (!_autoEnabled) {
+      debugPrint('🔴 Timer NO iniciado: auto_enabled = false');
+      return;
+    }
+
+    debugPrint('🟢 Timer automático INICIADO (cada 30 segundos)');
 
     _autoTimer?.cancel();
     _autoTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
@@ -279,28 +289,35 @@ class _MapScreenState extends State<MapScreen> {
 
       final now = DateTime.now();
       final diaActual = now.weekday.toString();
-
-      if (!_diasGuardados.contains(diaActual)) {
-        if (_compartiendo) _toggleCompartir();
-        return;
-      }
-
       final nowMin = now.hour * 60 + now.minute;
       final startMin = _inicioHora * 60 + _inicioMin;
       final endMin = _finHora * 60 + _finMin;
 
       final dentroDelHorario = nowMin >= startMin && nowMin < endMin;
-              debugPrint('⏰ Timer auto: dia=$diaActual | dentroHorario=$dentroDelHorario | compartiendo=$_compartiendo');
+
+      debugPrint(
+        '⏰ TIMER: hora=${now.hour}:${now.minute.toString().padLeft(2,'0')} | '
+        'dia=$diaActual | dentroHorario=$dentroDelHorario | '
+        'compartiendo=$_compartiendo'
+      );
+
+      if (!_diasGuardados.contains(diaActual)) {
+        debugPrint('❌ Día no permitido');
+        if (_compartiendo) _toggleCompartir();
+        return;
+      }
 
       if (dentroDelHorario && !_compartiendo) {
+        debugPrint('✅ HORARIO COINCIDE → Activando automático...');
         await _activarCompartirAutomatico();
       } else if (!dentroDelHorario && _compartiendo) {
+        debugPrint('⏹️ Horario terminó → Deteniendo');
         _toggleCompartir();
       }
     });
   }
 
-    Future<void> _activarCompartirAutomatico() async {
+      Future<void> _activarCompartirAutomatico() async {
     bool ok = await Geolocator.isLocationServiceEnabled();
     if (!ok) {
       _snack('Activa el GPS');
@@ -317,6 +334,20 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     setState(() => _compartiendo = true);
+
+    Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high, distanceFilter: 5),
+    ).listen((pos) {
+      if (!_compartiendo || !mounted) return;
+      _ref.set({'lat': pos.latitude, 'lng': pos.longitude});
+      setState(() => _miUbicacion = LatLng(pos.latitude, pos.longitude));
+      _mapCtrl.move(_miUbicacion!, 16);
+    });
+
+    debugPrint('🚀 Envío EN VIVO activado AUTOMÁTICAMENTE por horario');
+    _snack('Compartiendo automáticamente según horario');
+  }
 
     // 🔥 Iniciamos directamente el stream en vivo (sin pasar por toggle)
     Geolocator.getPositionStream(
