@@ -348,22 +348,7 @@ class _MapScreenState extends State<MapScreen> {
       _mapCtrl.move(_miUbicacion!, 16);
     });
 
-    print('🚀 Envío EN VIVO activado AUTOMÁTICAMENTE por horario');
-    _snack('Compartiendo automáticamente según horario');
-  }
-
-    // 🔥 Iniciamos directamente el stream en vivo (sin pasar por toggle)
-    Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high, distanceFilter: 5),
-    ).listen((pos) {
-      if (!_compartiendo || !mounted) return;
-      _ref.set({'lat': pos.latitude, 'lng': pos.longitude});
-      setState(() => _miUbicacion = LatLng(pos.latitude, pos.longitude));
-      _mapCtrl.move(_miUbicacion!, 16);
-    });
-
-    debugPrint('🚀 Envío EN VIVO activado AUTOMÁTICAMENTE por horario');
+        print('🚀 Envío EN VIVO activado AUTOMÁTICAMENTE por horario');
     _snack('Compartiendo automáticamente según horario');
   }
 
