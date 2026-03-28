@@ -317,7 +317,7 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
-      Future<void> _activarCompartirAutomatico() async {
+        Future<void> _activarCompartirAutomatico() async {
     bool ok = await Geolocator.isLocationServiceEnabled();
     if (!ok) {
       _snack('Activa el GPS');
@@ -335,9 +335,12 @@ class _MapScreenState extends State<MapScreen> {
 
     setState(() => _compartiendo = true);
 
+    // Stream en vivo (igual que el botón manual)
     Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high, distanceFilter: 5),
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 5,
+      ),
     ).listen((pos) {
       if (!_compartiendo || !mounted) return;
       _ref.set({'lat': pos.latitude, 'lng': pos.longitude});
@@ -345,7 +348,7 @@ class _MapScreenState extends State<MapScreen> {
       _mapCtrl.move(_miUbicacion!, 16);
     });
 
-    debugPrint('🚀 Envío EN VIVO activado AUTOMÁTICAMENTE por horario');
+    print('🚀 Envío EN VIVO activado AUTOMÁTICAMENTE por horario');
     _snack('Compartiendo automáticamente según horario');
   }
 
