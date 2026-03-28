@@ -290,6 +290,7 @@ class _MapScreenState extends State<MapScreen> {
       final endMin = _finHora * 60 + _finMin;
 
       final dentroDelHorario = nowMin >= startMin && nowMin < endMin;
+              debugPrint('⏰ Timer auto: dia=$diaActual | dentroHorario=$dentroDelHorario | compartiendo=$_compartiendo');
 
       if (dentroDelHorario && !_compartiendo) {
         await _activarCompartirAutomatico();
