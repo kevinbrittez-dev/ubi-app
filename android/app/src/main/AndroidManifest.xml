@@ -35,8 +35,12 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2"/>
-        <receiver
+                <receiver
             android:name="androidx.work.impl.background.systemalarm.RescheduleReceiver"
             android:exported="false"/>
+        <service
+            android:name=".LocationService"
+            android:foregroundServiceType="location"
+            android:exported="false" />
     </application>
 </manifest>
