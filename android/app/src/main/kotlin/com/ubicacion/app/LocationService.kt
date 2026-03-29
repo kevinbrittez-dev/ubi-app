@@ -11,13 +11,14 @@ import android.content.SharedPreferences
 import android.content.Context
 import com.google.firebase.FirebaseApp
 import com.google.firebase.database.FirebaseDatabase
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.Priority
 import kotlinx.coroutines.*
 
 class LocationService : Service() {
     private val scope = CoroutineScope(Dispatchers.Default + Job())
+    private var fusedLocationClient: FusedLocationProviderClient? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -60,12 +61,14 @@ class LocationService : Service() {
                 return
             }
 
-            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-            val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000).apply {
-                setMinUpdateIntervalMillis(2000)
-            }.build()
+            fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+            val locationRequest = LocationRequest.create().apply {
+                interval = 5000
+                fastestInterval = 2000
+                priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+            }
 
-            fusedLocationClient.requestLocationUpdates(
+            fusedLocationClient?.requestLocationUpdates(
                 locationRequest,
                 { location ->
                     scope.launch(Dispatchers.IO) {
