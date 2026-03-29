@@ -70,7 +70,7 @@ class LocationService : Service() {
             }
 
             val now = java.util.Calendar.getInstance()
-            val diasGuardados = prefs.getStringList("flutter.dias") ?: emptyList()
+            val diasGuardados = prefs.getStringSet("flutter.dias", emptySet())?.toList() ?: emptyList()
             if (!diasGuardados.contains(now.get(java.util.Calendar.DAY_OF_WEEK).toString())) {
                 stopSelf()
                 return
