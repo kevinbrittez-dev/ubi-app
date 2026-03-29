@@ -29,92 +29,11 @@ Future<void> mostrarNotif(String titulo, String cuerpo) async {
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     try {
-      // 🔧 MEJORA: Reintentos hasta 3 veces si falla
-      int intentos = 0;
-      const maxIntentos = 3;
-      bool enviado = false;
-
-      while (intentos < maxIntentos && !enviado) {
-        try {
-          await Firebase.initializeApp(
-            options: const FirebaseOptions(
-              apiKey: "AIzaSyCwjNCVAeLvMq_P0eyS36IUORZSOZD_KW0",
-              appId: "1:96664850127:android:0b324e7c26f574cde371ba",
-              messagingSenderId: "96664850127",
-              projectId: "ubicacion-app-21ff2",
-              databaseURL:
-                  "https://ubicacion-app-21ff2-default-rtdb.firebaseio.com",
-            ),
-          );
-
-          final prefs = await SharedPreferences.getInstance();
-          final clave = prefs.getString('clave') ?? '';
-          final autoOn = prefs.getBool('auto_enabled') ?? false;
-          if (clave.isEmpty || !autoOn) return true;
-
-          final now = DateTime.now();
-          final diasGuardados = prefs.getStringList('dias') ?? [];
-          if (!diasGuardados.contains(now.weekday.toString())) return true;
-
-          final startH = prefs.getInt('inicio_hora') ?? 22;
-          final startM = prefs.getInt('inicio_min') ?? 0;
-          final endH = prefs.getInt('fin_hora') ?? 22;
-          final endM = prefs.getInt('fin_min') ?? 30;
-          final nowMin = now.hour * 60 + now.minute;
-          final startMin = startH * 60 + startM;
-          final endMin = endH * 60 + endM;
-
-          if (nowMin < startMin || nowMin >= endMin) return true;
-
-          // ✅ Verificar permiso "Todo el tiempo"
-          final perm = await Geolocator.checkPermission();
-          if (perm != LocationPermission.always) {
-            debugPrint('❌ BACKGROUND: Permiso insuficiente: $perm');
-            return true;
-          }
-
-          // ✅ Verificar que GPS esté activado
-          bool gpsEnabled = await Geolocator.isLocationServiceEnabled();
-          if (!gpsEnabled) {
-            debugPrint('❌ BACKGROUND: GPS desactivado');
-            return true;
-          }
-
-          final pos = await Geolocator.getCurrentPosition(
-              desiredAccuracy: LocationAccuracy.high);
-
-          await FirebaseDatabase.instance
-              .ref('rooms/$clave')
-              .set({'lat': pos.latitude, 'lng': pos.longitude});
-
-          const androidInit =
-              AndroidInitializationSettings('@mipmap/ic_launcher');
-          await notifPlugin.initialize(
-              const InitializationSettings(android: androidInit));
-          await mostrarNotif(
-              '✅ Ubicación enviada',
-              'Lat: ${pos.latitude.toStringAsFixed(4)}, '
-              'Lng: ${pos.longitude.toStringAsFixed(4)}');
-
-          enviado = true;
-          debugPrint('🟢 BACKGROUND: Ubicación enviada exitosamente');
-        } catch (e) {
-          intentos++;
-          debugPrint('⚠️ BACKGROUND: Intento $intentos falló: $e');
-          if (intentos < maxIntentos) {
-            await Future.delayed(const Duration(seconds: 5));
-          }
-        }
-      }
-
-      if (!enviado) {
-        debugPrint('❌ BACKGROUND: Falló después de $maxIntentos intentos');
-        await mostrarNotif(
-            '❌ Error en ubicación automática',
-            'No se pudo enviar la ubicación');
-      }
+      const platform = MethodChannel('com.ubicacion.app/location');
+      await platform.invokeMethod('startLocationService');
+      debugPrint('🟢 BACKGROUND: Servicio de ubicación iniciado');
     } catch (e) {
-      debugPrint('🔴 BACKGROUND ERROR CRÍTICO: $e');
+      debugPrint('❌ ERROR iniciando servicio: $e');
     }
     return true;
   });
