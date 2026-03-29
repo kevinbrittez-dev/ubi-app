@@ -8,6 +8,8 @@ import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import android.app.Service
+import android.content.Context
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "com.ubicacion.app/battery"
@@ -23,7 +25,7 @@ class MainActivity: FlutterActivity() {
                         val isIgnoring = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             pm.isIgnoringBatteryOptimizations(packageName)
                         } else {
-                            true  // Versiones anteriores a Android 6 no tienen esta restricción
+                            true
                         }
                         result.success(isIgnoring)
                     }
@@ -38,5 +40,22 @@ class MainActivity: FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+            // 🎯 NUEVO: Handler para iniciar LocationService
+            MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.ubicacion.app/location")
+                .setMethodCallHandler { call, result ->
+                    when (call.method) {
+                        "startLocationService" -> {
+                            val intent = Intent(this, LocationService::class.java)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                startForegroundService(intent)
+                            } else {
+                                startService(intent)
+                            }
+                            result.success(null)
+                        }
+                        else -> result.notImplemented()
+                    }
+                }
     }
 }
